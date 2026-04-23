@@ -3,6 +3,27 @@ from app.graph import TestCaseGeneratorGraph
 
 load_dotenv()
 
+
+def _render_test_suite(state: dict) -> str:
+    col = {"id": 6, "description": 36, "input_data": 28, "expected_output": 32, "priority": 8, "category": 12}
+
+    def row(vals: dict) -> str:
+        return "| " + " | ".join(str(vals.get(k, ""))[:w].ljust(w) for k, w in col.items()) + " |"
+
+    header = row({k: k.replace("_", " ").title() for k in col})
+    separator = "| " + " | ".join("-" * w for w in col.values()) + " |"
+    lines = [header, separator] + [row(tc) for tc in state.get("test_cases", [])]
+
+    if state.get("additional_considerations"):
+        lines += ["\nAdditional Considerations:"]
+        lines += [f"  - {c}" for c in state["additional_considerations"]]
+
+    if state.get("feedback") and state["feedback"].startswith("APPROVED"):
+        lines += [f"\n{state['feedback']}"]
+
+    return "\n".join(lines)
+
+
 def run_test_case_generator():
     print("--- Test Case Generator ---")
     print("Enter the feature description for which you want to generate test cases.")
@@ -28,8 +49,7 @@ def run_test_case_generator():
             print("\n--- Generation Complete ---")
             print(f"Status: {final_state['status']}")
             print(f"Completed in {final_state['iterations']} iteration(s)\n")
-            print("Generated Test Cases:")
-            print(final_state["test_cases"])
+            print(_render_test_suite(final_state))
             print("-" * 40)
 
         except Exception as e:
