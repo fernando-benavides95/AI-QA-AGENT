@@ -16,6 +16,7 @@ GEMINI_MODEL_NAME = os.getenv("GEMINI_MODEL_NAME", "gemini-1.5-pro")
 class AgentState(TypedDict):
     test_cases: list                  # List[dict] — serialised TestCase objects
     additional_considerations: list   # List[str]
+    coverage_report: str              # Populated by analyze_test_coverage before each critic pass
     feedback: str
     iterations: int
     feature_description: str
@@ -71,7 +72,9 @@ class CriticAgent:
         self.prompt = ChatPromptTemplate.from_messages([
             ("system", (
                 "You are an expert test case critic. "
-                "Judge the test suite's quality relative to the complexity of the feature — "
+                "You will be given an objective coverage report alongside the test cases — "
+                "use it to ground your review in facts before forming a judgement. "
+                "Judge quality relative to the complexity of the feature: "
                 "simple features need fewer cases than complex ones. "
                 "Approve if the suite adequately covers core positive, negative, and edge cases. "
                 "If not approved, give at most 3 concise actionable improvements. "
@@ -80,6 +83,7 @@ class CriticAgent:
             )),
             ("human", (
                 "Feature: {feature_description}\n\n"
+                "Coverage report (objective analysis):\n{coverage_report}\n\n"
                 "Test cases to review:\n{test_cases}"
             )),
         ])
@@ -98,6 +102,7 @@ class CriticAgent:
         result: CriticResponse = chain.invoke({
             "test_cases": self._format_for_review(state["test_cases"]),
             "feature_description": state["feature_description"],
+            "coverage_report": state.get("coverage_report", "Not available."),
             "iteration": state.get("iterations", 1),
         })
 
