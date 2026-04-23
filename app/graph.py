@@ -1,6 +1,7 @@
 from langgraph.graph import StateGraph, END
 
 from app.agents import GeneratorAgent, CriticAgent, AgentState
+from app.tools import analyze_test_coverage, format_coverage_report
 
 MAX_ITERATIONS = 10
 
@@ -16,6 +17,8 @@ class TestCaseGeneratorGraph:
 
         def review_node(state: AgentState) -> AgentState:
             print(f"[Iteration {state['iterations']}] Critic is reviewing...")
+            analysis = analyze_test_coverage.invoke({"test_cases": state["test_cases"]})
+            state = {**state, "coverage_report": format_coverage_report(analysis)}
             result = critic.review_test_cases(state)
             if result["status"] == "approved":
                 print(f"[Iteration {state['iterations']}] Critic approved the test cases!")
@@ -41,6 +44,7 @@ class TestCaseGeneratorGraph:
         initial_state: AgentState = {
             "test_cases": [],
             "additional_considerations": [],
+            "coverage_report": "",
             "feedback": "No previous feedback.",
             "iterations": 0,
             "feature_description": feature_description,
