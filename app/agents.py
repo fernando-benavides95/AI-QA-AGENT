@@ -1,21 +1,26 @@
-from typing import List, Dict, TypedDict
+from typing import List, TypedDict
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
 from dotenv import load_dotenv
 import os
+
+from app.models import TestSuite, CriticResponse
 
 load_dotenv()
 
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 GEMINI_MODEL_NAME = os.getenv("GEMINI_MODEL_NAME", "gemini-1.5-pro")
 
+
 # --- Agent State ---
 class AgentState(TypedDict):
-    test_cases: str
+    test_cases: list                  # List[dict] — serialised TestCase objects
+    additional_considerations: list   # List[str]
     feedback: str
     iterations: int
     feature_description: str
-    status: str  # "in_progress" | "approved" | "max_iterations_reached"
+    status: str                       # "in_progress" | "approved" | "max_iterations_reached"
+
 
 # --- Generator Agent ---
 class GeneratorAgent:
@@ -26,27 +31,34 @@ class GeneratorAgent:
             google_api_key=GOOGLE_API_KEY
         )
         self.prompt = ChatPromptTemplate.from_messages([
-            ("system", "You are an expert test case generator. Create comprehensive test cases for a given software feature, covering positive, negative, and edge cases. For each test case provide: a description, input data, expected output, priority (High/Medium/Low), and category (Positive/Negative/Edge Case). Format your output as a clean markdown table."),
-            ("human", "Generate test cases for the following feature: {feature_description}\n\nPrevious feedback: {feedback}"),
+            ("system", (
+                "You are an expert test case generator. "
+                "Create comprehensive test cases for a given software feature, "
+                "covering positive, negative, and edge cases. "
+                "Include security and boundary considerations where relevant. "
+                "Return structured output only — do not add prose outside the schema."
+            )),
+            ("human", (
+                "Feature: {feature_description}\n\n"
+                "Previous critic feedback (address all points): {feedback}"
+            )),
         ])
 
     def generate_test_cases(self, state: AgentState) -> AgentState:
-        chain = self.prompt | self.llm
-        llm_response = chain.invoke({
+        chain = self.prompt | self.llm.with_structured_output(TestSuite)
+        result: TestSuite = chain.invoke({
             "feature_description": state["feature_description"],
-            "feedback": state["feedback"]
+            "feedback": state["feedback"],
         })
-
-        content = llm_response.content
-        if isinstance(content, list):
-            content = content[0]["text"]
 
         return {
             **state,
-            "test_cases": content,
+            "test_cases": [tc.model_dump() for tc in result.test_cases],
+            "additional_considerations": result.additional_considerations,
             "iterations": state.get("iterations", 0) + 1,
-            "status": "in_progress"
+            "status": "in_progress",
         }
+
 
 # --- Critic Agent ---
 class CriticAgent:
@@ -58,37 +70,42 @@ class CriticAgent:
         )
         self.prompt = ChatPromptTemplate.from_messages([
             ("system", (
-                "You are an expert test case critic. Review the provided test cases "
-                "for coverage, boundary conditions, and completness"
-                "and judge their quality relative to the complexity of the feature being tested — "
-                "If the test cases adequately cover the core positive, negative, and edge cases "
-                "respond with APPROVED followed by one brief line "
-                "listing the coverage categories you verified (e.g. 'APPROVED — verified: happy path, "
-                "auth failures, input validation, security, edge cases'). "
-                "Otherwise, give concise, actionable improvements. "
-                "Do not rewrite the test cases yourself. "
-                "On iteration {iteration} of a maximum of 10: if you are on iteration 5 or higher, "
-                "only withhold approval for a genuine critical gap, not minor improvements."
+                "You are an expert test case critic. "
+                "Judge the test suite's quality relative to the complexity of the feature — "
+                "simple features need fewer cases than complex ones. "
+                "Approve if the suite adequately covers core positive, negative, and edge cases. "
+                "If not approved, give at most 3 concise actionable improvements. "
+                "On iteration {iteration} of a maximum of 10: from iteration 5 onward, "
+                "only withhold approval for a genuine critical gap."
             )),
             ("human", (
-                "Feature being tested:\n{feature_description}\n\n"
+                "Feature: {feature_description}\n\n"
                 "Test cases to review:\n{test_cases}"
             )),
         ])
 
+    def _format_for_review(self, test_cases: list) -> str:
+        lines = []
+        for tc in test_cases:
+            lines.append(
+                f"[{tc['id']}] ({tc['priority']}, {tc['category']}) "
+                f"{tc['description']} | Input: {tc['input_data']} | Expected: {tc['expected_output']}"
+            )
+        return "\n".join(lines)
+
     def review_test_cases(self, state: AgentState) -> AgentState:
-        chain = self.prompt | self.llm
-        llm_response = chain.invoke({
-            "test_cases": state["test_cases"],
+        chain = self.prompt | self.llm.with_structured_output(CriticResponse)
+        result: CriticResponse = chain.invoke({
+            "test_cases": self._format_for_review(state["test_cases"]),
             "feature_description": state["feature_description"],
             "iteration": state.get("iterations", 1),
         })
 
-        content = llm_response.content
-        if isinstance(content, list):
-            content = content[0]["text"]
+        if result.gaps_identified:
+            print(f"  Gaps found: {'; '.join(result.gaps_identified)}")
 
-        if "APPROVED" in content.upper():
-            return {**state, "feedback": "APPROVED", "status": "approved"}
+        if result.approved:
+            summary = f"APPROVED — verified: {', '.join(result.verified_categories)}"
+            return {**state, "feedback": summary, "status": "approved"}
         else:
-            return {**state, "feedback": content, "status": "in_progress"}
+            return {**state, "feedback": result.feedback, "status": "in_progress"}
