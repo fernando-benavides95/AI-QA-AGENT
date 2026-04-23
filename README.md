@@ -1,51 +1,58 @@
 # Multi-Agent Test Case Generator
 
-This project implements a multi-agent system for generating and refining software test cases, leveraging Google's Gemini models orchestrated by LangGraph. It includes a feedback loop where a "Generator" agent creates test cases based on a JSON structure, and a "Critic" agent reviews them for comprehensive coverage, especially focusing on edge cases and boundary conditions. DeepEval is integrated to measure the quality of the generated test cases.
+A learning lab for AI test engineering. It implements a generator–critic multi-agent loop that produces structured software test cases from a plain-English feature description.
 
-## Features
+Built with LangGraph, LangChain, and Google Gemini. DeepEval will be integrated for evaluation.
 
-*   **Intelligent Test Case Generation**: A "Generator" agent creates detailed test cases (description, input data, expected output, priority, category) based on a given feature description and a JSON structure.
-*   **Critical Review & Feedback Loop**: A "Critic" agent evaluates the generated test cases for completeness, edge-case coverage, and adherence to best practices. If improvements are needed, it provides feedback, sending the process back to the Generator for refinement.
-*   **LangGraph Orchestration**: The agents and their interactions are seamlessly managed using LangGraph, enabling complex workflows and iterative processes.
-*   **Configurable Gemini Model Integration**: Utilizes `langchain_google_genai` to harness the advanced capabilities of Google's Gemini models (e.g., `gemini-1.5-pro`, `gemini-1.5-flash-preview`). The model name is configurable via the `.env` file.
+## How it works
 
-## Project Structure
+1. The **Generator** agent produces a structured test suite (positive, negative, and edge cases) for a given feature.
+2. The **Coverage Tool** runs a deterministic analysis of the suite — category distribution, priority breakdown, duplicate detection.
+3. The **Critic** agent reviews the test cases using both its own reasoning and the coverage report, then either approves or sends feedback to the Generator.
+4. The loop repeats until the Critic approves or the iteration limit is reached.
+
+## Project structure
 
 ```
 .
-├── .env                      # Environment variables (e.g., GOOGLE_API_KEY, GEMINI_MODEL_NAME)
 ├── app/
-│   ├── __init__.py           # Python package initializer
-│   ├── agents.py             # Defines Generator and Critic agents, test case structure (JSON)
-│   ├── graph.py              # Defines the LangGraph workflow and agent orchestration
-│   └── tools.py              # Contains utility functions, e.g., JSON sanitization
+│   ├── agents.py       # Generator and Critic agents, AgentState
+│   ├── graph.py        # LangGraph workflow and node orchestration
+│   ├── models.py       # Pydantic schemas: TestCase, TestSuite, CriticResponse
+│   └── tools.py        # analyze_test_coverage tool and report formatter
 ├── test/
-│   ├── __init__.py           # Python package initializer
-│   └── test_agent.py         # DeepEval test script for evaluating generated test cases
-└── requirements.txt          # List of Python dependencies
+│   └── test_agent.py   # Evaluation tests (DeepEval — in progress)
+├── run_generator_app.py
+├── requirements.txt
+└── .env                # GOOGLE_API_KEY, GEMINI_MODEL_NAME
 ```
-
-## Prerequisites
-
-Before you begin, ensure you have the following installed:
-
-*   **Python 3.9+**
-*   **Google API Key**: An API key for Google Gemini models. You can obtain one from the [Google AI Studio](https://aistudio.google.com/app/apikey).
 
 ## Setup
 
-**Configure your Google API Key and Gemini Model**:
-    Create or update the `.env` file in the root directory of the project:
-    ```
-    GOOGLE_API_KEY="YOUR_GEMINI_API_KEY"
-    GEMINI_MODEL_NAME="gemini-1.5-pro" # Or "gemini-1.5-flash-preview", etc.
-    ```
-    *   Replace `"YOUR_GEMINI_API_KEY"` with your actual API key.
-    *   Set `GEMINI_MODEL_NAME` to your desired Gemini model. If omitted, `gemini-1.5-pro` will be used by default.
+**1. Install dependencies**
+```bash
+pip install -r requirements.txt
+```
+
+**2. Configure environment**
+
+Create a `.env` file in the project root:
+```
+GOOGLE_API_KEY="your_key_here"
+GEMINI_MODEL_NAME="gemini-1.5-pro"
+```
+
+A key can be obtained from [Google AI Studio](https://aistudio.google.com/app/apikey). If `GEMINI_MODEL_NAME` is omitted it defaults to `gemini-1.5-pro`.
 
 ## Usage
 
-### Running the Test Case Generation Graph
+```bash
+python run_generator_app.py
+```
 
-The agent can be ran by executing a simple UI `run_generator_app.py`. You can run the file to generate test cases.
+Enter a feature description at the prompt. The agent will iterate until the Critic approves or the maximum iteration count is reached.
 
+**Example input:**
+```
+A file upload feature for a user's profile picture. It only accepts .jpg and .png files under 5MB. It must prevent any executable scripts from being uploaded.
+```
