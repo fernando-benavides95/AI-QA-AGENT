@@ -101,6 +101,9 @@ class CriticAgent:
             "iteration": state.get("iterations", 1),
         })
 
+        if result.gaps_identified:
+            print(f"  Gaps found: {'; '.join(result.gaps_identified)}")
+
         if result.approved:
             summary = f"APPROVED — verified: {', '.join(result.verified_categories)}"
             return {**state, "feedback": summary, "status": "approved"}

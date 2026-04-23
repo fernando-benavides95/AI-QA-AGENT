@@ -20,12 +20,22 @@ class TestSuite(BaseModel):
 
 
 class CriticResponse(BaseModel):
-    approved: bool = Field(description="True if the test suite is adequate for the feature's complexity")
+    gaps_identified: List[str] = Field(
+        description=(
+            "List every coverage gap found, including minor ones. "
+            "For features with multiple business rules, check rule combinations — "
+            "not just individual rules in isolation. Must be populated before deciding to approve. "
+            "Use an empty list only if you genuinely find no gaps."
+        )
+    )
+    approved: bool = Field(
+        description="True only if gaps_identified contains no critical gaps for this feature's complexity"
+    )
     verified_categories: List[str] = Field(
         default_factory=list,
         description="Coverage categories confirmed present (e.g. happy path, auth failures, input validation)"
     )
     feedback: str = Field(
         default="",
-        description="Concise actionable improvements if not approved; empty string if approved"
+        description="Concise actionable improvements drawn from gaps_identified; empty string if approved"
     )
