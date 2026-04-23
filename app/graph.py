@@ -45,7 +45,7 @@ class TestCaseGeneratorGraph:
             "test_cases": [],
             "additional_considerations": [],
             "coverage_report": "",
-            "feedback": "No previous feedback.",
+            "feedback_history": [],
             "iterations": 0,
             "feature_description": feature_description,
             "status": "in_progress",

@@ -17,7 +17,7 @@ class AgentState(TypedDict):
     test_cases: list                  # List[dict] — serialised TestCase objects
     additional_considerations: list   # List[str]
     coverage_report: str              # Populated by analyze_test_coverage before each critic pass
-    feedback: str
+    feedback_history: List[str]       # Accumulated critic feedback across all iterations
     iterations: int
     feature_description: str
     status: str                       # "in_progress" | "approved" | "max_iterations_reached"
@@ -41,15 +41,21 @@ class GeneratorAgent:
             )),
             ("human", (
                 "Feature: {feature_description}\n\n"
-                "Previous critic feedback (address all points): {feedback}"
+                "{feedback}"
             )),
         ])
+
+    def _format_feedback(self, feedback_history: List[str]) -> str:
+        if not feedback_history:
+            return "No previous feedback."
+        rounds = "\n".join(f"Round {i + 1}: {fb}" for i, fb in enumerate(feedback_history))
+        return f"Critic feedback from all previous rounds — address every point:\n{rounds}"
 
     def generate_test_cases(self, state: AgentState) -> AgentState:
         chain = self.prompt | self.llm.with_structured_output(TestSuite)
         result: TestSuite = chain.invoke({
             "feature_description": state["feature_description"],
-            "feedback": state["feedback"],
+            "feedback": self._format_feedback(state.get("feedback_history", [])),
         })
 
         return {
@@ -110,7 +116,8 @@ class CriticAgent:
             print(f"  Gaps found: {'; '.join(result.gaps_identified)}")
 
         if result.approved:
-            summary = f"APPROVED — verified: {', '.join(result.verified_categories)}"
-            return {**state, "feedback": summary, "status": "approved"}
+            return {**state, "status": "approved"}
         else:
-            return {**state, "feedback": result.feedback, "status": "in_progress"}
+            history = list(state.get("feedback_history", []))
+            history.append(result.feedback)
+            return {**state, "feedback_history": history, "status": "in_progress"}

@@ -18,8 +18,8 @@ def _render_test_suite(state: dict) -> str:
         lines += ["\nAdditional Considerations:"]
         lines += [f"  - {c}" for c in state["additional_considerations"]]
 
-    if state.get("feedback") and state["feedback"].startswith("APPROVED"):
-        lines += [f"\n{state['feedback']}"]
+    if state.get("status") == "approved":
+        lines += ["\nAPPROVED"]
 
     return "\n".join(lines)
 
