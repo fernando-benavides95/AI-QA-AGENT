@@ -21,7 +21,13 @@ Built with LangGraph, LangChain, and Google Gemini. DeepEval will be integrated 
 │   ├── models.py       # Pydantic schemas: TestCase, TestSuite, CriticResponse
 │   └── tools.py        # analyze_test_coverage tool and report formatter
 ├── test/
-│   └── test_agent.py   # Evaluation tests (DeepEval — in progress)
+│   ├── conftest.py           # Shared pytest fixtures
+│   ├── unit/                 # Layer 1 — deterministic, no LLM calls
+│   ├── evaluation/           # Layer 2 — DeepEval metrics (real LLM)
+│   ├── consistency/          # Layer 3 — variance across repeated runs
+│   ├── adversarial/          # Layer 4 — adversarial inputs + regression
+│   └── fixtures/             # golden_dataset.json and other test data
+├── pytest.ini
 ├── run_generator_app.py
 ├── requirements.txt
 └── .env                # GOOGLE_API_KEY, GEMINI_MODEL_NAME
@@ -55,4 +61,32 @@ Enter a feature description at the prompt. The agent will iterate until the Crit
 **Example input:**
 ```
 A file upload feature for a user's profile picture. It only accepts .jpg and .png files under 5MB. It must prevent any executable scripts from being uploaded.
+```
+
+## Testing
+
+The test suite follows an AI-adapted testing pyramid.
+
+```
+          /\
+         /  \         Layer 4 — Adversarial + Regression
+        / L4 \        Golden dataset, prompt regression, adversarial inputs
+       /------\
+      /        \      Layer 3 — Consistency / Non-determinism
+     /    L3    \     Statistical assertions across repeated runs
+    /------------\
+   /              \   Layer 2 — LLM Evaluation (DeepEval)
+  /      L2        \  Answer Relevancy, G-Eval — real LLM calls, cost $
+ /------------------\
+/                    \
+        L1             Layer 1 — Deterministic unit tests
+                       Tools, schemas, graph structure — no LLM, CI safe
+```
+
+IMPORTANT NOTE: above Layer 1, **every test will call LLM**. Use pytest markers to control what runs where:
+
+```bash
+pytest -m unit          # Layer 1 only — fast, free, CI safe
+pytest -m llm           # Layers 2-4 — requires API key, costs money
+pytest                  # Everything
 ```
