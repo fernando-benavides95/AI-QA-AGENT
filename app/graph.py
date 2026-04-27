@@ -6,6 +6,12 @@ from app.tools import analyze_test_coverage, format_coverage_report
 MAX_ITERATIONS = 10
 
 
+def route_after_review(state: AgentState) -> str:
+    if state["status"] == "approved" or state["iterations"] >= MAX_ITERATIONS:
+        return END
+    return "generate"
+
+
 class TestCaseGeneratorGraph:
     def __init__(self):
         generator = GeneratorAgent()
@@ -25,11 +31,6 @@ class TestCaseGeneratorGraph:
             else:
                 print(f"[Iteration {state['iterations']}] Critic requested revisions. Feeding back to generator...")
             return result
-
-        def route_after_review(state: AgentState) -> str:
-            if state["status"] == "approved" or state["iterations"] >= MAX_ITERATIONS:
-                return END
-            return "generate"
 
         builder = StateGraph(AgentState)
         builder.add_node("generate", generate_node)
