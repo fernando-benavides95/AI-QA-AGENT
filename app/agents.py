@@ -48,9 +48,9 @@ class GeneratorAgent:
 
     def _format_feedback(self, feedback_history: List[str]) -> str:
         if not feedback_history:
-            return "No previous feedback."
-        rounds = "\n".join(f"Round {i + 1}: {fb}" for i, fb in enumerate(feedback_history))
-        return f"Critic feedback from all previous rounds — address every point:\n{rounds}"
+            return "No additional requirements."
+        points = "\n".join(f"- {fb}" for fb in feedback_history)
+        return f"Your test suite must also cover all of the following:\n{points}"
 
     def generate_test_cases(self, state: AgentState) -> AgentState:
         result: TestSuite = self.chain.invoke({
