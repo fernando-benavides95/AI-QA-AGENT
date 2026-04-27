@@ -1,8 +1,10 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 from typing import List, Literal
 
 
 class TestCase(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     id: str = Field(description="Test case identifier, e.g. TC01")
     description: str = Field(description="What is being tested")
     input_data: str = Field(description="Input values or preconditions")
@@ -39,3 +41,11 @@ class CriticResponse(BaseModel):
         default="",
         description="Concise actionable improvements drawn from gaps_identified; empty string if approved"
     )
+
+    @model_validator(mode="after")
+    def validate_approval_fields(self) -> "CriticResponse":
+        if not self.approved and not self.feedback.strip():
+            raise ValueError("feedback must not be empty when approved is False")
+        if self.approved and not self.verified_categories:
+            raise ValueError("verified_categories must not be empty when approved is True")
+        return self
