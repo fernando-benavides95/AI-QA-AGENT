@@ -17,7 +17,7 @@ def analyze_test_coverage(test_cases: list) -> dict:
             "total": 0,
             "by_category": {},
             "by_priority": {},
-            "missing_categories": ["Positive", "Negative", "Edge Case"],
+            "missing_categories": ["Edge Case", "Negative", "Positive"],
             "duplicate_descriptions": [],
         }
 
