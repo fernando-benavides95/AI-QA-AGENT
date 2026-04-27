@@ -58,8 +58,7 @@ class TestTestCaseSchema:
 
     def test_unexpected_fields_raise_validation_error(self):
         # LLMs can hallucinate fields not in the schema (e.g. confidence_score,
-        # test_type). Without extra="forbid" these are silently dropped, masking
-        # schema drift. This ensures any deviation from the contract is caught.
+        # test_type) ensures deviations are caught. (similar restriction could be apply to testsuite a criticresponse)
         data = {**VALID_TEST_CASE, "confidence_score": 0.95}
         with pytest.raises(ValidationError):
             TestCase(**data)
