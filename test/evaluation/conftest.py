@@ -4,6 +4,12 @@ Shared fixtures for Layer 2 evaluation tests.
 GeminiJudge wraps the project's existing LLM as DeepEval's evaluation model.
 The agent_output fixture runs the full graph ONCE per session so all evaluation
 tests share the same output — avoiding repeated API calls and cost.
+
+TBD: REPORTING GAP: DeepEval's built-in reporting requires a Confident AI account. 
+Results are currently console-only — pass/fail with no
+persistent history. Alternatives to revisit:
+  - LangSmith (integrates natively with LangChain)
+  - Self-hosted reporting via evaluate() + custom JSON writer
 """
 import os
 import pytest
