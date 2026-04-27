@@ -40,3 +40,7 @@ Thumbs.db
 
 # Local environment variables
 .env
+
+# DeepEval local artifacts
+deepeval_telemetry.txt
+.deepeval/
