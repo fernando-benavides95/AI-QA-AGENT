@@ -44,6 +44,7 @@ class GeneratorAgent:
                 "{feedback}"
             )),
         ])
+        self.chain = self.prompt | self.llm.with_structured_output(TestSuite)
 
     def _format_feedback(self, feedback_history: List[str]) -> str:
         if not feedback_history:
@@ -52,8 +53,7 @@ class GeneratorAgent:
         return f"Critic feedback from all previous rounds — address every point:\n{rounds}"
 
     def generate_test_cases(self, state: AgentState) -> AgentState:
-        chain = self.prompt | self.llm.with_structured_output(TestSuite)
-        result: TestSuite = chain.invoke({
+        result: TestSuite = self.chain.invoke({
             "feature_description": state["feature_description"],
             "feedback": self._format_feedback(state.get("feedback_history", [])),
         })
@@ -93,6 +93,7 @@ class CriticAgent:
                 "Test cases to review:\n{test_cases}"
             )),
         ])
+        self.chain = self.prompt | self.llm.with_structured_output(CriticResponse)
 
     def _format_for_review(self, test_cases: list) -> str:
         lines = []
@@ -104,8 +105,7 @@ class CriticAgent:
         return "\n".join(lines)
 
     def review_test_cases(self, state: AgentState) -> AgentState:
-        chain = self.prompt | self.llm.with_structured_output(CriticResponse)
-        result: CriticResponse = chain.invoke({
+        result: CriticResponse = self.chain.invoke({
             "test_cases": self._format_for_review(state["test_cases"]),
             "feature_description": state["feature_description"],
             "coverage_report": state.get("coverage_report", "Not available."),
