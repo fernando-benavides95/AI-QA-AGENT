@@ -1,21 +1,28 @@
 """
 Shared fixtures for Layer 2 evaluation tests.
 
-GeminiJudge wraps the project's existing LLM as DeepEval's evaluation model.
+LLMJudge wraps Gemini directly — no evaluation framework needed.
+The judge receives a prompt, returns a JSON score, and we assert on that score.
+This makes the full evaluation pipeline transparent and readable.
+
 The agent_output fixture runs the full graph ONCE per session so all evaluation
 tests share the same output — avoiding repeated API calls and cost.
 
-TBD: REPORTING GAP: DeepEval's built-in reporting requires a Confident AI account. 
-Results are currently console-only — pass/fail with no
-persistent history. Alternatives to revisit:
-  - LangSmith (integrates natively with LangChain)
-  - Self-hosted reporting via evaluate() + custom JSON writer
+TBD: REPORTING GAP: results are currently console-only (printed during the run).
+Alternatives to revisit when a reporting layer is needed:
+  - LangSmith (integrates natively with LangChain, accepts personal accounts)
+  - Self-hosted: capture judge responses and write timestamped JSON to reports/
+
+NOTE (best practice): using the same model family to generate AND judge
+introduces self-evaluation bias — the model tends to approve its own output.
+In production use a different provider as the judge (Anthropic, OpenAI, etc.).
 """
 import os
+import re
+import json
 import pytest
 from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
-from deepeval.models.base_model import DeepEvalBaseLLM
 from app.graph import TestCaseGeneratorGraph
 from app.agents import CriticAgent
 
@@ -24,69 +31,61 @@ load_dotenv()
 GEMINI_MODEL_NAME = os.getenv("GEMINI_MODEL_NAME", "gemini-1.5-pro")
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 
-# Feature used as the input for all Layer 2 evaluations.
-# Deliberately mid-complexity: simple enough to have a clear expected output,
-# rich enough to have meaningful positive/negative/edge coverage requirements.
+# Feature used as input for all Layer 2 evaluations.
+# Mid-complexity: clear enough to have expected coverage, rich enough to
+# require positive/negative/edge cases.
 EVALUATION_FEATURE = "Simple login page with email and password"
 
 
-class GeminiJudge(DeepEvalBaseLLM):
+class LLMJudge:
     """
-    Wraps Gemini as DeepEval's evaluation judge.
+    Manual LLM-as-judge evaluator.
 
-    NOTE (best practice): using the same model family to generate AND judge
-    introduces self-evaluation bias — the model tends to score its own output
-    higher than an independent judge would. In production, use a different
-    provider as the judge (Anthropic, OpenAI, etc.).
+    Sends a scoring prompt to Gemini and parses the JSON response.
+    Each evaluation prompt defines its own scoring criteria — the judge
+    scores against whatever rubric the prompt describes.
     """
 
     def __init__(self):
         self._model = ChatGoogleGenerativeAI(
             model=GEMINI_MODEL_NAME,
             google_api_key=GOOGLE_API_KEY,
-            temperature=0,  # deterministic for evaluation
+            temperature=0,
         )
-
-    def load_model(self):
-        return self._model
 
     def _extract_text(self, content) -> str:
         if isinstance(content, list):
             return content[0].get("text", "") if content else ""
         return content
 
-    def generate(self, prompt: str) -> str:
-        return self._extract_text(self._model.invoke(prompt).content)
-
-    async def a_generate(self, prompt: str) -> str:
-        response = await self._model.ainvoke(prompt)
-        return self._extract_text(response.content)
-
-    def get_model_name(self) -> str:
-        return GEMINI_MODEL_NAME
+    def evaluate(self, prompt: str) -> dict:
+        """
+        Sends prompt to the judge and returns parsed result.
+        Expected return shape: {"score": float, "reason": str, ...}
+        Raises ValueError if the response is not valid JSON.
+        """
+        raw = self._extract_text(self._model.invoke(prompt).content)
+        cleaned = re.sub(r"```(?:json)?\s*|\s*```", "", raw).strip()
+        try:
+            return json.loads(cleaned)
+        except json.JSONDecodeError:
+            raise ValueError(f"Judge returned non-JSON response:\n{raw}")
 
 
 @pytest.fixture(scope="session")
-def gemini_judge():
-    return GeminiJudge()
+def judge():
+    return LLMJudge()
 
 
 @pytest.fixture(scope="session")
 def agent_output():
-    """
-    Runs the full generator-critic loop once and caches the result.
-    All evaluation tests in this session share this output.
-    """
+    """Runs the full generator-critic loop once and caches the result."""
     graph = TestCaseGeneratorGraph()
     return graph.run(EVALUATION_FEATURE)
 
 
 @pytest.fixture(scope="session")
 def formatted_output(agent_output):
-    """
-    Formats the structured test cases into readable text for DeepEval.
-    Uses the same format the critic sees — descriptive enough for the judge
-    to evaluate relevancy and coverage quality.
-    """
+    """Formats structured test cases as readable text for the judge prompt."""
     critic = CriticAgent()
     return critic._format_for_review(agent_output["test_cases"])
