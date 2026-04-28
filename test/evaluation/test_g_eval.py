@@ -45,6 +45,8 @@ def test_test_suite_meets_coverage_quality_rubric(gemini_judge, formatted_output
             "Verify at least one test case covers input validation (e.g. empty fields, invalid format).",
             "Verify at least one edge case or boundary condition is tested.",
             "Verify at least one security concern is addressed (e.g. SQL injection, brute force).",
+            "Verify there are no semantically redundant test cases — two test cases that test "
+            "the same scenario with different wording count as duplicates and reduce suite quality.",
         ],
         evaluation_params=[
             LLMTestCaseParams.INPUT,
