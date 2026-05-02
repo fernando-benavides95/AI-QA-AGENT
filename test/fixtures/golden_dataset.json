@@ -1,1 +1,20 @@
-[]
+[
+  {
+    "id": "GD001",
+    "feature": "Simple login page with email and password",
+    "description": "Basic authentication — well-defined, low complexity. High quality expected.",
+    "min_relevancy_score": 0.80
+  },
+  {
+    "id": "GD002",
+    "feature": "A file upload feature for a user profile picture. It only accepts .jpg and .png files under 5MB. It must prevent any executable scripts from being uploaded.",
+    "description": "File validation with explicit security requirement. Medium complexity.",
+    "min_relevancy_score": 0.80
+  },
+  {
+    "id": "GD003",
+    "feature": "An e-commerce checkout system offers free shipping for orders over $50. For orders under $50, a flat $5 fee is applied. The system should not allow orders of $0.",
+    "description": "Business rule validation with clear boundary conditions. Tests boundary thinking.",
+    "min_relevancy_score": 0.80
+  }
+]
