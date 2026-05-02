@@ -2,4 +2,3 @@ langchain-google-genai
 langgraph
 python-dotenv
 deepeval
-dotenv

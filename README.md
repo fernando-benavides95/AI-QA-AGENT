@@ -2,7 +2,19 @@
 
 A learning lab for AI test engineering. It implements a generator–critic multi-agent loop that produces structured software test cases from a plain-English feature description.
 
-Built with LangGraph, LangChain, and Google Gemini. DeepEval will be integrated for evaluation.
+Built with LangGraph, LangChain, Google Gemini, and DeepEval.
+
+## What this demonstrates
+
+This project explores AI test engineering techniques hands-on:
+
+- **Multi-agent orchestration** — generator–critic loop with LangGraph, structured output with Pydantic, feedback accumulation across iterations
+- **LLM-as-judge** — manual implementation and DeepEval wrapper; scoring LLM output probabilistically instead of asserting exact values
+- **G-Eval** — rubric-based evaluation where QA domain knowledge is encoded as scoring criteria
+- **Adversarial testing** — prompt injection (authority-mimicry attack), out-of-domain inputs, graceful degradation
+- **Prompt regression** — golden dataset with per-entry quality thresholds; detects when a prompt change degrades output
+- **Non-determinism as a property** — range-based assertions across repeated runs instead of fixed expected values
+- **AI testing pyramid** — four-layer structure adapted from the traditional pyramid for LLM-based systems
 
 ## How it works
 
@@ -23,9 +35,9 @@ Built with LangGraph, LangChain, and Google Gemini. DeepEval will be integrated 
 ├── test/
 │   ├── conftest.py           # Shared pytest fixtures
 │   ├── unit/                 # Layer 1 — deterministic, no LLM calls
-│   ├── evaluation/           # Layer 2 — DeepEval metrics (real LLM)
-│   ├── consistency/          # Layer 3 — variance across repeated runs
-│   ├── adversarial/          # Layer 4 — adversarial inputs + regression
+│   ├── evaluation/           # Layer 2 — LLM-as-judge quality evaluation (DeepEval)
+│   ├── consistency/          # Layer 3 — structural invariants across repeated runs
+│   ├── adversarial/          # Layer 4 — adversarial inputs, prompt injection, regression
 │   └── fixtures/             # golden_dataset.json and other test data
 ├── pytest.ini
 ├── run_generator_app.py
@@ -35,12 +47,16 @@ Built with LangGraph, LangChain, and Google Gemini. DeepEval will be integrated 
 
 ## Setup
 
-**1. Install dependencies**
+**1. Prerequisites**
+
+Python 3.10 or higher is required.
+
+**2. Install dependencies**
 ```bash
 pip install -r requirements.txt
 ```
 
-**2. Configure environment**
+**3. Configure environment**
 
 Create a `.env` file in the project root:
 ```
@@ -75,8 +91,8 @@ The test suite follows an AI-adapted testing pyramid.
       /        \      Layer 3 — Consistency / Non-determinism
      /    L3    \     Statistical assertions across repeated runs
     /------------\
-   /              \   Layer 2 — LLM Evaluation (DeepEval)
-  /      L2        \  Answer Relevancy, G-Eval — real LLM calls, cost $
+   /              \   Layer 2 — LLM Evaluation
+  /      L2        \  Answer Relevancy, G-Eval (DeepEval) — real LLM calls, cost $
  /------------------\
 /                    \
         L1             Layer 1 — Deterministic unit tests
