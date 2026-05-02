@@ -11,7 +11,7 @@ system. These criteria encode what a QA engineer would check when reviewing
 a test suite. If the rubric is wrong, the score is wrong — defining good
 criteria is the hardest and most valuable skill in AI evaluation.
 
-Run with: pytest -m llm
+Run with: pytest -m evaluation
 """
 import pytest
 from deepeval import assert_test
@@ -19,7 +19,7 @@ from deepeval.test_case import LLMTestCase, LLMTestCaseParams
 from deepeval.metrics import GEval
 from .conftest import EVALUATION_FEATURE
 
-pytestmark = pytest.mark.llm
+pytestmark = [pytest.mark.llm, pytest.mark.evaluation]
 
 
 def test_test_suite_meets_coverage_quality_rubric(gemini_judge, formatted_output):

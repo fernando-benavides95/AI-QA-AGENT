@@ -85,8 +85,12 @@ The test suite follows an AI-adapted testing pyramid.
 
 IMPORTANT NOTE: above Layer 1, **every test will call LLM**. Use pytest markers to control what runs where:
 
-```bash
-pytest -m unit          # Layer 1 only — fast, free, CI safe
-pytest -m llm           # Layers 2-4 — requires API key, costs money
-pytest                  # Everything
-```
+| Command | Layer | Est. runtime | Notes |
+|---|---|---|---|
+| `pytest -m unit` | 1 | ~5s | No LLM calls — CI safe |
+| `pytest -m evaluation` | 2 | ~2 min | 1 agent run + 2 judge calls |
+| `pytest -m consistency` | 3 | ~15 min | 5 full agent runs |
+| `pytest -m adversarial` | 4 | ~10 min | 5 agent runs, 1 with judge |
+| `pytest -m regression` | 4 | ~10 min | 3 golden dataset entries |
+| `pytest -m llm` | 2–4 | ~35 min | All LLM layers in one shot |
+| `pytest` | all | ~35 min | Full suite |

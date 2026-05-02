@@ -13,7 +13,7 @@ LLM-AS-JUDGE: DeepEval sends both the input and output to a judge LLM
 (GeminiJudge) which scores the relevancy 0.0-1.0. The assertion is
 probabilistic: score >= threshold, not output == expected.
 
-Run with: pytest -m llm
+Run with: pytest -m evaluation
 """
 import pytest
 from deepeval import assert_test
@@ -21,7 +21,7 @@ from deepeval.test_case import LLMTestCase
 from deepeval.metrics import AnswerRelevancyMetric
 from .conftest import EVALUATION_FEATURE
 
-pytestmark = pytest.mark.llm
+pytestmark = [pytest.mark.llm, pytest.mark.evaluation]
 
 
 def test_generated_cases_are_relevant_to_feature(gemini_judge, formatted_output):

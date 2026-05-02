@@ -22,13 +22,13 @@ distributions, trend analysis — is a dashboard and observability concern.
 The thresholds below were set after an initial calibration run of 5 executions.
 HOW TO RECALIBRATE: run the file, observe the printed values, update constants.
 
-Run with: pytest -m llm
+Run with: pytest -m consistency
 """
 import pytest
 from app.graph import TestCaseGeneratorGraph
 from app.tools import analyze_test_coverage
 
-pytestmark = pytest.mark.llm
+pytestmark = [pytest.mark.llm, pytest.mark.consistency]
 
 FEATURE = "Simple login page with email and password"
 N_RUNS = 5

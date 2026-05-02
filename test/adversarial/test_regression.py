@@ -26,7 +26,7 @@ WORKFLOW FOR SAFE PROMPT CHANGES:
   4. Run again — any score below its threshold is a regression
   5. If all scores hold or improve, the change is safe to ship
 
-Run with: pytest -m llm
+Run with: pytest -m regression
 """
 import json
 import re
@@ -35,7 +35,7 @@ from pathlib import Path
 from app.graph import TestCaseGeneratorGraph
 from app.agents import CriticAgent
 
-pytestmark = pytest.mark.llm
+pytestmark = [pytest.mark.llm, pytest.mark.regression]
 
 GOLDEN_DATASET_PATH = Path(__file__).parent.parent / "fixtures" / "golden_dataset.json"
 

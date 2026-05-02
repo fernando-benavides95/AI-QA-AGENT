@@ -25,12 +25,12 @@ Three input categories tested here:
      software testing? Does the system hallucinate plausible-looking nonsense
      or refuse gracefully?
 
-Run with: pytest -m llm
+Run with: pytest -m adversarial
 """
 import pytest
 from app.agents import CriticAgent
 
-pytestmark = pytest.mark.llm
+pytestmark = [pytest.mark.llm, pytest.mark.adversarial]
 
 RELEVANCY_PROMPT = """
 You are an expert software testing evaluator.
