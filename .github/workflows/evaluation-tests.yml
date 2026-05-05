@@ -25,6 +25,6 @@ jobs:
     - name: Run evaluation tests
       env:
         GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
-        GEMINI_MODEL_NAME: gemini-1.5-pro
+        GEMINI_MODEL_NAME: ${{ secrets.GEMINI_MODEL_NAME }}
       run: |
         pytest -m evaluation -v

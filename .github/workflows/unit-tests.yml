@@ -39,6 +39,6 @@ jobs:
         # A placeholder value is required because the agent constructors
         # initialise ChatGoogleGenerativeAI at import time.
         GOOGLE_API_KEY: dummy-key-for-unit-tests
-        GEMINI_MODEL_NAME: gemini-1.5-pro
+        GEMINI_MODEL_NAME: gemini-2.0-flash
       run: |
         pytest -m unit -v
