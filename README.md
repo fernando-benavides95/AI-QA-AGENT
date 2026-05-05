@@ -1,5 +1,8 @@
 # Multi-Agent Test Case Generator
 
+[![Unit Tests](https://github.com/fernando-benavides95/AI-QA-AGENT/actions/workflows/unit-tests.yml/badge.svg)](https://github.com/fernando-benavides95/AI-QA-AGENT/actions/workflows/unit-tests.yml)
+[![Evaluation Tests](https://github.com/fernando-benavides95/AI-QA-AGENT/actions/workflows/evaluation-tests.yml/badge.svg)](https://github.com/fernando-benavides95/AI-QA-AGENT/actions/workflows/evaluation-tests.yml)
+
 A learning lab for AI test engineering. It implements a generator–critic multi-agent loop that produces structured software test cases from a plain-English feature description.
 
 Built with LangGraph, LangChain, Google Gemini, and DeepEval.
