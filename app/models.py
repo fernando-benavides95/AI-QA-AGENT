@@ -1,5 +1,10 @@
 from pydantic import BaseModel, ConfigDict, Field, model_validator
-from typing import List, Literal
+from typing import List, Literal, Optional
+
+
+class FeatureValidation(BaseModel):
+    is_feature: bool = Field(description="True if the input describes a software feature that can be tested")
+    feedback: str = Field(description="Brief explanation of why this is or is not a software feature, or what is unclear")
 
 
 class TestCase(BaseModel):
